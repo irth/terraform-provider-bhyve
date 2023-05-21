@@ -19,7 +19,7 @@ var (
 )
 
 type switchesDataSource struct {
-	client client.Executor
+	client client.Client
 }
 
 type switchesDataSourceModel struct {
@@ -57,14 +57,13 @@ func (d *switchesDataSource) Configure(_ context.Context, req datasource.Configu
 		return
 	}
 
-	d.client = req.ProviderData.(client.Executor)
+	d.client = req.ProviderData.(client.Client)
 }
 
 func (d *switchesDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var state switchesDataSourceModel
 
-	switches := client.Switches{}
-	err := switches.LoadFromSystem(d.client)
+	switches, err := d.client.SwitchList()
 	if err != nil {
 		resp.Diagnostics.AddError("failed to read switches", err.Error())
 		return

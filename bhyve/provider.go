@@ -139,8 +139,12 @@ func (p *bhyveProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		Params: sshParams,
 	}
 
-	resp.DataSourceData = executor
-	resp.ResourceData = executor
+	client := client.Client{
+		Executor: executor,
+	}
+
+	resp.DataSourceData = client
+	resp.ResourceData = client
 }
 
 func (p *bhyveProvider) DataSources(_ context.Context) []func() datasource.DataSource {

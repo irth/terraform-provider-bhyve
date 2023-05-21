@@ -17,6 +17,7 @@ output "switches" {
   value = data.bhyve_switches.switches
 }
 
-resource "bhyve_switch" "tf" {
-  name = "tf"
-}
+# resource "bhyve_switch" "tf" {
+#   name    = "tf"
+#   address = "10.21.37.0/24"
+# }

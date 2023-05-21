@@ -1,7 +1,6 @@
 package client
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/samber/lo"
@@ -12,14 +11,13 @@ type Switch struct {
 	Address string
 }
 
-type Switches []Switch
+func (c *Client) SwitchList() (map[string]Switch, error) {
+	// TODO: use ctx
+	switches := make(map[string]Switch)
 
-var ErrInvalidOutput = errors.New("vm command returned invalid output")
-
-func (s *Switches) LoadFromSystem(executor Executor) error {
-	out, err := executor.RunCmd("vm", "switch", "list")
+	out, err := c.RunCmd("vm", "switch", "list")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	lines := strings.Split(out, "\n")
@@ -30,7 +28,7 @@ func (s *Switches) LoadFromSystem(executor Executor) error {
 	addrIdx := lo.IndexOf(headerFields, "ADDRESS")
 
 	if nameIdx == -1 || addrIdx == -1 {
-		return ErrInvalidOutput
+		return nil, ErrInvalidOutput
 	}
 
 	for _, line := range lines {
@@ -42,15 +40,7 @@ func (s *Switches) LoadFromSystem(executor Executor) error {
 		if addr == "-" {
 			addr = ""
 		}
-		*s = append(*s, Switch{Name: name, Address: addr})
+		switches[name] = Switch{Name: name, Address: addr}
 	}
-	return nil
-}
-
-func (s Switches) AsMap() map[string]Switch {
-	m := make(map[string]Switch, len(s))
-	for _, sw := range s {
-		m[sw.Name] = sw
-	}
-	return m
+	return switches, nil
 }

@@ -10,7 +10,7 @@ import (
 )
 
 type switchResource struct {
-	client client.Executor
+	client client.Client
 }
 
 var (
@@ -49,7 +49,7 @@ func (r *switchResource) Configure(_ context.Context, req resource.ConfigureRequ
 		return
 	}
 
-	r.client = req.ProviderData.(client.Executor)
+	r.client = req.ProviderData.(client.Client)
 }
 
 func (r *switchResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -90,15 +90,13 @@ func (r *switchResource) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 
 	// TODO: use vm switch info isntead
-	switches := client.Switches{}
-	err := switches.LoadFromSystem(r.client)
+	switches, err := r.client.SwitchList()
 	if err != nil {
 		resp.Diagnostics.AddError("failed to read", err.Error())
 		return
 	}
 
-	switchesMap := switches.AsMap()
-	if sw, ok := switchesMap[state.Name.ValueString()]; ok {
+	if sw, ok := switches[state.Name.ValueString()]; ok {
 		if sw.Address != "" {
 			state.Address = types.StringValue(sw.Address)
 		}
