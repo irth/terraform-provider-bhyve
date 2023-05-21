@@ -150,5 +150,7 @@ func (p *bhyveProvider) DataSources(_ context.Context) []func() datasource.DataS
 }
 
 func (p *bhyveProvider) Resources(_ context.Context) []func() resource.Resource {
-	return nil
+	return []func() resource.Resource{
+		NewSwitchResource,
+	}
 }

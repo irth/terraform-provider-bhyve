@@ -16,3 +16,7 @@ data "bhyve_switches" "switches" {
 output "switches" {
   value = data.bhyve_switches.switches
 }
+
+resource "bhyve_switch" "tf" {
+  name = "tf"
+}
