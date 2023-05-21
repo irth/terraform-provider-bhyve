@@ -5,6 +5,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/irth/terraform-provider-bhyve/bhyve/client"
 )
@@ -36,11 +38,19 @@ func (r *switchResource) Schema(_ context.Context, req resource.SchemaRequest, r
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
 				Required: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"address": schema.StringAttribute{
 				Optional: true,
 			},
 		},
+		Blocks:              map[string]schema.Block{},
+		Description:         "",
+		MarkdownDescription: "",
+		DeprecationMessage:  "",
+		Version:             0,
 	}
 }
 
@@ -60,15 +70,13 @@ func (r *switchResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	// TODO: validate address is cidr
-	// TODO: move this code to client
+	err := r.client.SwitchCreate(
+		&client.Switch{
+			Name:    plan.Name.ValueString(),
+			Address: plan.Address.ValueString(),
+		},
+	)
 
-	params := []string{"switch", "create", plan.Name.ValueString()}
-	if !plan.Address.IsNull() {
-		params = append(params, "-a", plan.Address.ValueString())
-	}
-
-	_, err := r.client.RunCmd("vm", params...)
 	if err != nil {
 		resp.Diagnostics.AddError("failed to create", err.Error())
 		return
@@ -89,21 +97,20 @@ func (r *switchResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	// TODO: use vm switch info isntead
-	switches, err := r.client.SwitchList()
+	sw, err := r.client.SwitchInfo(state.Name.ValueString())
+
 	if err != nil {
 		resp.Diagnostics.AddError("failed to read", err.Error())
 		return
 	}
 
-	if sw, ok := switches[state.Name.ValueString()]; ok {
-		if sw.Address != "" {
-			state.Address = types.StringValue(sw.Address)
-		}
+	if sw.Address != "" {
+		state.Address = types.StringValue(sw.Address)
 	} else {
-		resp.Diagnostics.AddError("failed to read", "switch not found")
-		return
+		state.Address = types.StringNull()
 	}
+
+	state.Name = types.StringValue(sw.Name)
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
@@ -112,10 +119,44 @@ func (r *switchResource) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 }
 
-func (r *switchResource) Update(_ context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	panic("implement me")
+func (r *switchResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan switchResourceModel
+	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var err error
+	if plan.Address.IsNull() {
+		err = r.client.SwitchAddress(plan.Name.ValueString(), "")
+	} else {
+		err = r.client.SwitchAddress(plan.Name.ValueString(), plan.Address.ValueString())
+	}
+
+	if err != nil {
+		resp.Diagnostics.AddError("failed to update", err.Error())
+		return
+	}
+
+	diags = resp.State.Set(ctx, plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
-func (r *switchResource) Delete(_ context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	panic("implement me")
+func (r *switchResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var plan switchResourceModel
+	diags := req.State.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	err := r.client.SwitchDestroy(plan.Name.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to delete", err.Error())
+		return
+	}
 }

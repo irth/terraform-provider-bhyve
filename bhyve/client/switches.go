@@ -9,6 +9,8 @@ import (
 type Switch struct {
 	Name    string
 	Address string
+
+	client *Client
 }
 
 func (c *Client) SwitchList() (map[string]Switch, error) {
@@ -40,7 +42,57 @@ func (c *Client) SwitchList() (map[string]Switch, error) {
 		if addr == "-" {
 			addr = ""
 		}
-		switches[name] = Switch{Name: name, Address: addr}
+		switches[name] = Switch{Name: name, Address: addr, client: c}
 	}
 	return switches, nil
+}
+
+func (c *Client) SwitchCreate(sw *Switch) error {
+	sw.client = c
+	// TODO: validate address is cidr
+
+	params := []string{"switch", "create", sw.Name}
+	if sw.Address != "" {
+		params = append(params, "-a", sw.Address)
+	}
+
+	_, err := c.RunCmd("vm", params...)
+	if err != nil {
+		return err
+	}
+
+	if sw.Address != "" {
+		// for some reason, the `-a` flag doesn't always work
+		err = c.SwitchAddress(sw.Name, sw.Address)
+	}
+
+	return err
+}
+
+func (c *Client) SwitchDestroy(name string) error {
+	params := []string{"switch", "destroy", name}
+	_, err := c.RunCmd("vm", params...)
+	return err
+}
+
+func (c *Client) SwitchInfo(name string) (*Switch, error) {
+	switches, err := c.SwitchList()
+	if err != nil {
+		return nil, err
+	}
+
+	sw, ok := switches[name]
+	if !ok {
+		return nil, ErrNotFound
+	}
+
+	return &sw, nil
+}
+
+func (c *Client) SwitchAddress(name string, addr string) error {
+	if addr == "" {
+		addr = "none"
+	}
+	_, err := c.RunCmd("vm", "switch", "address", name, addr)
+	return err
 }
