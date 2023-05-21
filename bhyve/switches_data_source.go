@@ -23,11 +23,10 @@ type switchesDataSource struct {
 }
 
 type switchesDataSourceModel struct {
-	Switches []switchesSwitchModel `tfsdk:"switches"`
+	Switches map[string]switchesSwitchModel `tfsdk:"switches"`
 }
 
 type switchesSwitchModel struct {
-	Name    types.String `tfsdk:"name"`
 	Address types.String `tfsdk:"address"`
 	// TODO: support others
 }
@@ -39,13 +38,10 @@ func (d *switchesDataSource) Metadata(_ context.Context, req datasource.Metadata
 func (d *switchesDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"switches": schema.ListNestedAttribute{
+			"switches": schema.MapNestedAttribute{
 				Computed: true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
-							Computed: true,
-						},
 						"address": schema.StringAttribute{
 							Computed: true,
 						},
@@ -74,16 +70,14 @@ func (d *switchesDataSource) Read(ctx context.Context, req datasource.ReadReques
 		return
 	}
 
-	state.Switches = []switchesSwitchModel{}
+	state.Switches = map[string]switchesSwitchModel{}
 
 	for _, sw := range switches {
-		swM := switchesSwitchModel{
-			Name: types.StringValue(sw.Name),
-		}
+		swM := switchesSwitchModel{}
 		if sw.Address != "" {
 			swM.Address = types.StringValue(sw.Address)
 		}
-		state.Switches = append(state.Switches, swM)
+		state.Switches[sw.Name] = swM
 	}
 
 	diags := resp.State.Set(ctx, &state)
