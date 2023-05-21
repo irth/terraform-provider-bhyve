@@ -21,3 +21,9 @@ resource "bhyve_switch" "tf" {
   name    = "tf2"
   address = "10.21.38.0/24"
 }
+
+data "bhyve_config" "this" {}
+
+output "config" {
+  value = data.bhyve_config.this
+}

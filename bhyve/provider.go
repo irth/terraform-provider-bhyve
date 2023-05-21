@@ -150,6 +150,7 @@ func (p *bhyveProvider) Configure(ctx context.Context, req provider.ConfigureReq
 func (p *bhyveProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewSwitchesDataSource,
+		NewConfigDataSource,
 	}
 }
 
