@@ -68,7 +68,7 @@ func (e SSHExecutor) RunCmd(cmd string, args ...string) (string, error) {
 		if ee, ok := err.(*exec.ExitError); ok {
 			stderr = string(ee.Stderr)
 		}
-		return "", CommandExecutionError{
+		return string(out), CommandExecutionError{
 			Wrapped:    err,
 			ReturnCode: execCmd.ProcessState.ExitCode(),
 

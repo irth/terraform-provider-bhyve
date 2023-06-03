@@ -46,11 +46,6 @@ func (r *switchResource) Schema(_ context.Context, req resource.SchemaRequest, r
 				Optional: true,
 			},
 		},
-		Blocks:              map[string]schema.Block{},
-		Description:         "",
-		MarkdownDescription: "",
-		DeprecationMessage:  "",
-		Version:             0,
 	}
 }
 
