@@ -123,7 +123,13 @@ func (r *isoResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 		return
 	}
 
-	checksum, err := r.client.ChecksumISO(state.Name.ValueString())
+	var checksum string
+	var err error
+	if state.Image.ValueBool() {
+		checksum, err = r.client.ChecksumIMG(state.Name.ValueString())
+	} else {
+		checksum, err = r.client.ChecksumISO(state.Name.ValueString())
+	}
 	if err != nil {
 		if errors.As(err, &client.ErrFileNotFound{}) {
 			resp.State.RemoveResource(ctx)
