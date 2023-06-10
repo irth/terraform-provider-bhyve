@@ -64,22 +64,3 @@ func (s Sysrc) GetDefault(key, defaultValue string) (string, error) {
 	}
 	return v, nil
 }
-
-func (s Sysrc) GetBool(key string) (bool, error) {
-	v, err := s.Get(key)
-	if err != nil {
-		return false, err
-	}
-	return v == "YES", nil
-}
-
-func (s Sysrc) GetBoolDefault(key string, defaultValue bool) (bool, error) {
-	v, err := s.GetBool(key)
-	if err != nil {
-		if err == ErrUnknownVariable {
-			err = nil
-		}
-		return defaultValue, err
-	}
-	return v, nil
-}
